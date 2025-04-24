@@ -19,3 +19,8 @@ export type templateMessage = {
     rejected_reason: string,
     status: string
 }
+
+export type event = {
+    category: string,
+    action: string
+}

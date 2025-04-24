@@ -1,6 +1,6 @@
 export interface BlipResponse {
-    type: string;
-    resource: any;
+    type?: string;
+    resource?: any;
     method?: string,
     status: string,
     id: string,

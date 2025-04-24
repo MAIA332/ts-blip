@@ -4,9 +4,10 @@ import { Contact,userState } from "./Types/contacts.types";
 import dotenv from "dotenv";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import { eventCounter,category,templateMessage } from "./Types/analytics.type";
+import { eventCounter,category,templateMessage,event } from "./Types/analytics.type";
 import { broadcast } from "./Types/messaging.type";
 import moment from 'moment-timezone';
+import { Network } from "./utils/network";
 
 export class BlipContacts{
     private destinys: destinys[] = [];
@@ -211,6 +212,28 @@ export class BlipAnalytics {
     constructor() {
       dotenv.config();
     }
+
+    async createEvent(blipApiKey: string, event: event): Promise<BlipResponse> {
+      const response = await axios.post(
+        `${this.blipApiUrl}/commands`,
+        {
+          id: uuidv4(),
+          to: this.destinys[0].to,
+          method: "set",
+          uri: "/event-track",
+          type: "application/vnd.iris.eventTrack+json",
+          resource: event,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: blipApiKey,
+          },
+        }
+      );
+  
+      return response.data;
+    }
   
     async getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take:number = 500): Promise<eventCounter[]> {
         const response = await axios.post(
@@ -273,18 +296,73 @@ export class BlipAnalytics {
 
 export class BlipMessaging extends BlipAnalytics {
     private BlipContacts: BlipContacts;
-  
-    constructor() {
+    private instanceId: string;
+    private categoryTrack: string;
+    private classIdentifier: string;
+    private networkModule: Network;
+    private blipApiKey: string;
+    private isInscented: boolean = false
+
+    constructor(networkModule: Network = new Network() ,blipApiKey: string) {
       dotenv.config();
       super();
+      
+      this.instanceId =`${uuidv4()}-${moment().format('YYYYMMDDHHmmss')}`
+      this.categoryTrack = "sdkuse.ts-blip";
+      this.classIdentifier = "ts-blip.BlipMessaging";
       this.BlipContacts = new BlipContacts();
+      this.networkModule = networkModule;
+      this.blipApiKey = blipApiKey
+
+      return new Proxy(this, {
+        get: (target, prop: string, receiver) => {
+          const original = Reflect.get(target, prop, receiver);
+    
+          if (
+            typeof original === "function" &&
+            prop !== "init" &&
+            prop !== "constructor" &&
+            !prop.startsWith("_")
+          ) {
+            return (...args: any[]) => {
+              if (!target.isInscented) {
+                console.warn(`[BlipMessaging] Método '${prop}' bloqueado, inicialize a classe antes`);
+                return;
+              }
+              return original.apply(target, args);
+            };
+          }
+    
+          return original;
+        }
+      });
+    }
+
+    public async init(){
+      await this.sendUseRegister(this.blipApiKey);
+      this.isInscented = true
+    }
+
+    private async sendUseRegister(blipApiKey: string) {
+      const trackobj: event = {
+        category:this.categoryTrack,
+        action: JSON.stringify({
+          class: this.classIdentifier,
+          method: "sendGrowthMessage",
+          datetime:moment().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'),
+          instance: this.instanceId,
+          network: this.networkModule.summary()
+        })
+      }
+
+      await this.createEvent(blipApiKey, trackobj);
     }
   
-    async sendGrowthMessage(blipApiKey: string,broadcast: broadcast,ignore_onboarding: boolean = false,retrieve_on_flow: boolean = true): Promise<any[]> {
-        try {            
+    public async sendGrowthMessage(broadcast: broadcast,ignore_onboarding: boolean = false,retrieve_on_flow: boolean = true): Promise<any[]> {
+        try {  
             const { template_name, stateidentifier, blockid, clients, bot, components_mapping } = broadcast;
     
-            const templates = await this.getTemplateMessages(blipApiKey);
+            const templates = await this.getTemplateMessages(this.blipApiKey);
             const selectedTemplate = templates.find((tpl: any) => tpl.name === template_name);
         
             if (!selectedTemplate) {
@@ -298,7 +376,7 @@ export class BlipMessaging extends BlipAnalytics {
                 const notOnboarded = await Promise.all(clients.map(async (client) => {
                 
                     const contact_identity = `${client.number}@wa.gw.msging.net`;
-                    const user_state = await this.BlipContacts.get_user_state(blipApiKey, contact_identity, stateidentifier);
+                    const user_state = await this.BlipContacts.get_user_state(this.blipApiKey, contact_identity, stateidentifier);
                     
                     if (user_state.resource !== "onboarding" && user_state.status !== "failure") {
                         return client;
@@ -329,7 +407,7 @@ export class BlipMessaging extends BlipAnalytics {
                 },
                 };
         
-                const contact = await this.BlipContacts.get_contact(contact_identity,blipApiKey);
+                const contact = await this.BlipContacts.get_contact(contact_identity,this.blipApiKey);
                 let hasActiveSession = false;
                 const now = moment().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss');
 
@@ -358,13 +436,12 @@ export class BlipMessaging extends BlipAnalytics {
                 //return[{ status: "mock", message: "Mocking active session", clients: [client] }];
                 
                 
-                await this.BlipContacts.create_or_update_contact(client.name, contact_identity, blipApiKey, client.extras);
-                console.log(retrieve_on_flow);
+                await this.BlipContacts.create_or_update_contact(client.name, contact_identity, this.blipApiKey, client.extras);
                 
                 if(retrieve_on_flow){
                     
-                    await this.BlipContacts.set_master_state(blipApiKey, contact_identity, botstate);
-                    await this.BlipContacts.set_user_state(blipApiKey, contact_identity, blockid, stateidentifier);
+                    await this.BlipContacts.set_master_state(this.blipApiKey, contact_identity, botstate);
+                    await this.BlipContacts.set_user_state(this.blipApiKey, contact_identity, blockid, stateidentifier);
                 }
 
                 let sendResult = false;
@@ -375,10 +452,10 @@ export class BlipMessaging extends BlipAnalytics {
                     
                     //return [{ status: "mock", message: "Mocking active session", clients: [client] }];
                     
-                    sendResult = await this.sendScheduledMessage(blipApiKey, contact_identity, formated_message,"application/json",now,`Scheduled|[${client.name}]|SDK|${now}`);
+                    sendResult = await this.sendScheduledMessage(contact_identity, formated_message,"application/json",now,`Scheduled|[${client.name}]|SDK|${now}`);
                 }
                 else{
-                    sendResult = await this.sendSingleMessage(blipApiKey, contact_identity, message);
+                    sendResult = await this.sendSingleMessage(contact_identity, message);
 
                 }
                 successRates.push({
@@ -388,7 +465,19 @@ export class BlipMessaging extends BlipAnalytics {
                     hasActiveSession: hasActiveSession
                 });
             }
-        
+
+            const growthTrackobj: event = {
+              category:"sdkuse.ts-blip.sendGrowthMessage",
+              action: JSON.stringify({
+                class: this.classIdentifier,
+                instance: this.instanceId,
+                datetime:moment().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'),
+                successRates: successRates
+              })
+            }
+  
+            await this.createEvent(this.blipApiKey, growthTrackobj);
+            
             return successRates;
         }
         catch (error:any) {
@@ -396,7 +485,7 @@ export class BlipMessaging extends BlipAnalytics {
         }
     }
   
-    private async sendSingleMessage(blipApiKey: string, to: string, message: any): Promise<boolean> {
+    private async sendSingleMessage(to: string, message: any): Promise<boolean> {
       try {
         await axios.post(
           `${this.blipApiUrl}/messages`,
@@ -412,7 +501,7 @@ export class BlipMessaging extends BlipAnalytics {
           {
             headers: {
               "Content-Type": "application/json",
-              Authorization: blipApiKey,
+              Authorization: this.blipApiKey,
             },
           }
         );
@@ -423,7 +512,7 @@ export class BlipMessaging extends BlipAnalytics {
       }
     }
 
-    async sendScheduledMessage(blipApiKey: string, to: string, message: any,type: string,when: string,name?: string): Promise<any> {
+    async sendScheduledMessage(to: string, message: any,type: string,when: string,name?: string): Promise<any> {
         try{
 
             let name_ = name
@@ -455,7 +544,7 @@ export class BlipMessaging extends BlipAnalytics {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: blipApiKey,
+                        Authorization: this.blipApiKey,
                     },
                 }
             );
