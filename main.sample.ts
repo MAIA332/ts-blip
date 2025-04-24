@@ -9,8 +9,8 @@ dotenv.config();
 const routerKey = process.env.ROUTER_KEY! 
 const network = new Network();
 
-const blipContacts = new BlipContacts(network);
-blipContacts.init(routerKey);
+const blipContacts = new BlipContacts(network,routerKey);
+blipContacts.init();
 //======================================================
 const blip = new BlipMessaging(network,routerKey,blipContacts);
 blip.init();
