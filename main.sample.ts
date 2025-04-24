@@ -9,8 +9,11 @@ dotenv.config();
 const routerKey = process.env.ROUTER_KEY! 
 const network = new Network();
 
-const blip = new BlipMessaging(network,routerKey);
-//blip.init();
+const blipContacts = new BlipContacts(network);
+blipContacts.init(routerKey);
+//======================================================
+const blip = new BlipMessaging(network,routerKey,blipContacts);
+blip.init();
 
 const myBroad: broadcast = {
     clients: [{
@@ -65,7 +68,7 @@ const myBroad: broadcast = {
 }
 
 const messagingresult = async () => {
-    return await blip.sendGrowthMessage(myBroad);
+    return await blip.sendGrowthMessage(myBroad); //{ignore_onboarding: false,retrieve_on_flow: false}
 };
 
 // Forma correta de chamar e exibir:

@@ -15,3 +15,8 @@ export type client = {
     extras:Record<string, string>,
     component:any
 }
+
+export type config = {
+    ignore_onboarding?: boolean
+    retrieve_on_flow?: boolean
+}

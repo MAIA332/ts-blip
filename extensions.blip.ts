@@ -5,215 +5,20 @@ import dotenv from "dotenv";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { eventCounter,category,templateMessage,event } from "./Types/analytics.type";
-import { broadcast } from "./Types/messaging.type";
+import { broadcast,config } from "./Types/messaging.type";
 import moment from 'moment-timezone';
 import { Network } from "./utils/network";
 
-export class BlipContacts{
-    private destinys: destinys[] = [];
-    private blipUrl: string =  process.env.BLIP_URL!;
-    constructor(){
-        dotenv.config();
 
-        this.destinys = [
-            {
-                to: "postmaster@crm.msging.net"
-            },
-            {
-                to: "postmaster@msging.net"
-            }
-        ]
-                
-    }
-
-    async get_contact(tunnel_originator: string,blip_api_key: string): Promise<Contact>{
-        const data = {
-            id: uuidv4(),
-            to: this.destinys[0].to,
-            method: "get",
-            uri: `/contacts/${tunnel_originator}`,
-          };
-        
-          const response = await axios.request({
-            url: `${this.blipUrl}/commands`,
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: blip_api_key,
-            },
-            data: data,
-          });
-        
-        return response.data.resource;
-    }
-
-    async get_all_contacts(blip_api_key: string,skip:number = 0,take:number = 5000,filter?:string): Promise<Contact[]>{
-        
-        const filter_ = filter?`&$filter=${filter}`:"";
-        
-        const data = {
-            id: uuidv4(),
-            to: this.destinys[0].to,
-            method: "get",
-            uri: `/contacts?$skip=${skip}&$top=${take}${filter_}`,
-          };
-        
-          const response = await axios.request({
-            url: `${this.blipUrl}/commands`,
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: blip_api_key,
-            },
-            data: data,
-          });
-        
-        return response.data.resource;
-    }
-
-    async get_context_variables(blip_api_key: string,contact_identintity: string,filter?:string): Promise<BlipResponse>{
-        
-        const filter_ = filter?`/${filter}`:"";
-
-        const data = {
-            id: uuidv4(),
-            to: this.destinys[1].to,
-            method: "get",
-            uri: `/contexts/${contact_identintity}${filter_}`,
-          };
-        
-        const response = await axios.request({
-            url: `${this.blipUrl}/commands`,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: blip_api_key,
-            },
-            data: data,
-        });
-        
-        return response.data;
-    }
-    async create_context_variable(blip_api_key: string, contact_identity: string, variable: string, value: string, type_ = "text/plain"): Promise<BlipResponse> {
-        const data = {
-          id: uuidv4(),
-          to: this.destinys[1].to,
-          method: "set",
-          uri: `/contexts/${contact_identity}/${variable}`,
-          type: type_,
-          resource: value,
-        };
-    
-        const response = await axios.post(`${this.blipUrl}/commands`, data, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: blip_api_key,
-          },
-        });
-    
-        return response.data;
-      }
-    
-    async set_master_state(blip_api_key: string, contact_identity: string, state: string): Promise<BlipResponse> {
-        const data = {
-            id: uuidv4(),
-            to: this.destinys[1].to,
-            method: "set",
-            uri: `/contexts/${contact_identity}@wa.gw.msging.net/master-state`,
-            type: "text/plain",
-            resource: state,
-        };
-
-        const response = await axios.post(`${this.blipUrl}/commands`, data, {
-            headers: {
-            "Content-Type": "application/json",
-            Authorization: blip_api_key,
-            },
-        });
-
-        return response.data;
-    }
-    
-    async set_user_state(blip_api_key: string, contact_identity: string, state: string, identifier: string): Promise<BlipResponse> {
-        const data = {
-          id: uuidv4(),
-          to: this.destinys[1].to,
-          method: "set",
-          uri: `/contexts/${contact_identity}@wa.gw.msging.net/stateid%40${identifier}`,
-          type: "text/plain",
-          resource: state,
-        };
-    
-        const response = await axios.post(`${this.blipUrl}/commands`, data, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: blip_api_key,
-          },
-        });
-    
-        return response.data;
-    }
-    
-    async get_user_state(blip_api_key: string, contact_identity: string, identifier: string): Promise<userState> {
-        const data = {
-          id: uuidv4(),
-          to: this.destinys[1].to,
-          method: "get",
-          uri: `/contexts/${contact_identity}/stateid%40${identifier}`,
-        };
-    
-        const response = await axios.post(`${this.blipUrl}/commands`, data, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: blip_api_key,
-          },
-        });
-
-        const response_ = {
-            status: response.data.status,
-            resource: response.data.resource? response.data.resource : null
-        }
-    
-        return response_;
-    }
-    
-    async create_or_update_contact(name: string, contact_identity: string, blip_api_key: string, extras: Record<string, string>): Promise<BlipResponse> {
-        const phone = contact_identity.split("@")[0];
-    
-        const data = {
-          id: uuidv4(),
-          to: this.destinys[0].to,
-          method: "set",
-          uri: `/contacts`,
-          type: "application/vnd.lime.contact+json",
-          resource: {
-            name,
-            phoneNumber: phone,
-            identity: contact_identity,
-            extras: extras,
-          },
-        };
-    
-        const response = await axios.post(`${this.blipUrl}/commands`, data, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: blip_api_key,
-          },
-        });
-    
-        return response.data;
-    }
-}
-
-export class BlipAnalytics {
-    protected blipApiUrl: string =  process.env.BLIP_URL!;
-    protected destinys: destinys[] = [{ to: "postmaster@analytics.msging.net" }, { to: "postmaster@wa.gw.msging.net" }, { to: "postmaster@scheduler.msging.net" }];
+class BlipAnalytics {
+  protected blipApiUrl: string =  process.env.BLIP_URL!;
+  protected destinys: destinys[] = [{ to: "postmaster@analytics.msging.net" }, { to: "postmaster@wa.gw.msging.net" }, { to: "postmaster@scheduler.msging.net" }];
   
-    constructor() {
-      dotenv.config();
-    }
-
-    async createEvent(blipApiKey: string, event: event): Promise<BlipResponse> {
+  constructor() {
+    dotenv.config();
+  }
+  
+  async createEvent(blipApiKey: string, event: event): Promise<BlipResponse> {
       const response = await axios.post(
         `${this.blipApiUrl}/commands`,
         {
@@ -233,7 +38,7 @@ export class BlipAnalytics {
       );
   
       return response.data;
-    }
+  }
   
     async getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take:number = 500): Promise<eventCounter[]> {
         const response = await axios.post(
@@ -265,12 +70,12 @@ export class BlipAnalytics {
             uri: "/event-track",
         },
         {
-            headers: {
+          headers: {
             "Content-Type": "application/json",
             Authorization: blipApiKey,
-            },
+          },
         }
-        );
+      );
         return response.data.resource.items;
     }
   
@@ -292,6 +97,256 @@ export class BlipAnalytics {
       );
       return response.data.resource.data;
     }
+  }
+export class BlipContacts extends BlipAnalytics{
+      protected destinys: destinys[] = [];
+      private blipUrl: string =  process.env.BLIP_URL!;
+      private instanceId: string;
+      private categoryTrack: string;
+      private classIdentifier: string;
+      private networkModule: Network;
+      private isInscented: boolean = false
+  
+      constructor(networkModule: Network = new Network()){
+          dotenv.config();
+          super();
+  
+          this.destinys = [
+              {
+                  to: "postmaster@crm.msging.net"
+              },
+              {
+                  to: "postmaster@msging.net"
+              }
+          ]
+  
+          this.instanceId =`${uuidv4()}-${moment().format('YYYYMMDDHHmmss')}`
+          this.categoryTrack = "sdkuse.ts-blip";
+          this.classIdentifier = "ts-blip.BlipContacts";
+          this.networkModule = networkModule
+  
+          return new Proxy(this, {
+            get: (target, prop: string, receiver) => {
+              const original = Reflect.get(target, prop, receiver);
+        
+              if (
+                typeof original === "function" &&
+                prop !== "init" &&
+                prop !== "constructor" &&
+                !prop.startsWith("_")
+              ) {
+                return (...args: any[]) => {
+                  if (!target.isInscented) {
+                    console.warn(`[BlipContacts] Método '${prop}' bloqueado, inicialize a classe antes`);
+                    return;
+                  }
+                  return original.apply(target, args);
+                };
+              }
+        
+              return original;
+            }
+          });
+                  
+      }
+  
+      public async init(blipApiKey: string){
+        await this.sendUseRegister(blipApiKey);
+        this.isInscented = true
+      }
+  
+      private async sendUseRegister(blipApiKey: string) {
+        const trackobj: event = {
+          category:this.categoryTrack,
+          action: JSON.stringify({
+            class: this.classIdentifier,
+            method: "sendGrowthMessage",
+            datetime:moment().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'),
+            instance: this.instanceId,
+            network: this.networkModule.summary()
+          })
+        }
+  
+        await this.createEvent(blipApiKey, trackobj);
+      }
+  
+      async get_contact(tunnel_originator: string,blip_api_key: string): Promise<Contact>{
+          const data = {
+              id: uuidv4(),
+              to: this.destinys[0].to,
+              method: "get",
+              uri: `/contacts/${tunnel_originator}`,
+            };
+          
+            const response = await axios.request({
+              url: `${this.blipUrl}/commands`,
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: blip_api_key,
+              },
+              data: data,
+            });
+          
+          return response.data.resource;
+      }
+  
+      async get_all_contacts(blip_api_key: string,skip:number = 0,take:number = 5000,filter?:string): Promise<Contact[]>{
+          
+          const filter_ = filter?`&$filter=${filter}`:"";
+          
+          const data = {
+              id: uuidv4(),
+              to: this.destinys[0].to,
+              method: "get",
+              uri: `/contacts?$skip=${skip}&$top=${take}${filter_}`,
+            };
+          
+            const response = await axios.request({
+              url: `${this.blipUrl}/commands`,
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: blip_api_key,
+              },
+              data: data,
+            });
+          
+          return response.data.resource;
+      }
+  
+      async get_context_variables(blip_api_key: string,contact_identintity: string,filter?:string): Promise<BlipResponse>{
+          
+          const filter_ = filter?`/${filter}`:"";
+  
+          const data = {
+              id: uuidv4(),
+              to: this.destinys[1].to,
+              method: "get",
+              uri: `/contexts/${contact_identintity}${filter_}`,
+            };
+          
+          const response = await axios.request({
+              url: `${this.blipUrl}/commands`,
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  Authorization: blip_api_key,
+              },
+              data: data,
+          });
+          
+          return response.data;
+      }
+      async create_context_variable(blip_api_key: string, contact_identity: string, variable: string, value: string, type_ = "text/plain"): Promise<BlipResponse> {
+          const data = {
+            id: uuidv4(),
+            to: this.destinys[1].to,
+            method: "set",
+            uri: `/contexts/${contact_identity}/${variable}`,
+            type: type_,
+            resource: value,
+          };
+      
+          const response = await axios.post(`${this.blipUrl}/commands`, data, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: blip_api_key,
+            },
+          });
+      
+          return response.data;
+        }
+      
+      async set_master_state(blip_api_key: string, contact_identity: string, state: string): Promise<BlipResponse> {
+          const data = {
+              id: uuidv4(),
+              to: this.destinys[1].to,
+              method: "set",
+              uri: `/contexts/${contact_identity}@wa.gw.msging.net/master-state`,
+              type: "text/plain",
+              resource: state,
+          };
+  
+          const response = await axios.post(`${this.blipUrl}/commands`, data, {
+              headers: {
+              "Content-Type": "application/json",
+              Authorization: blip_api_key,
+              },
+          });
+  
+          return response.data;
+      }
+      
+      async set_user_state(blip_api_key: string, contact_identity: string, state: string, identifier: string): Promise<BlipResponse> {
+          const data = {
+            id: uuidv4(),
+            to: this.destinys[1].to,
+            method: "set",
+            uri: `/contexts/${contact_identity}@wa.gw.msging.net/stateid%40${identifier}`,
+            type: "text/plain",
+            resource: state,
+          };
+      
+          const response = await axios.post(`${this.blipUrl}/commands`, data, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: blip_api_key,
+            },
+          });
+      
+          return response.data;
+      }
+      
+      async get_user_state(blip_api_key: string, contact_identity: string, identifier: string): Promise<userState> {
+          const data = {
+            id: uuidv4(),
+            to: this.destinys[1].to,
+            method: "get",
+            uri: `/contexts/${contact_identity}/stateid%40${identifier}`,
+          };
+      
+          const response = await axios.post(`${this.blipUrl}/commands`, data, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: blip_api_key,
+            },
+          });
+  
+          const response_ = {
+              status: response.data.status,
+              resource: response.data.resource? response.data.resource : null
+          }
+      
+          return response_;
+      }
+      
+      async create_or_update_contact(name: string, contact_identity: string, blip_api_key: string, extras: Record<string, string>): Promise<BlipResponse> {
+          const phone = contact_identity.split("@")[0];
+      
+          const data = {
+            id: uuidv4(),
+            to: this.destinys[0].to,
+            method: "set",
+            uri: `/contacts`,
+            type: "application/vnd.lime.contact+json",
+            resource: {
+              name,
+              phoneNumber: phone,
+              identity: contact_identity,
+              extras: extras,
+            },
+          };
+      
+          const response = await axios.post(`${this.blipUrl}/commands`, data, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: blip_api_key,
+            },
+          });
+      
+          return response.data;
+      }
 }
 
 export class BlipMessaging extends BlipAnalytics {
@@ -302,15 +357,15 @@ export class BlipMessaging extends BlipAnalytics {
     private networkModule: Network;
     private blipApiKey: string;
     private isInscented: boolean = false
-
-    constructor(networkModule: Network = new Network() ,blipApiKey: string) {
+    
+    constructor(networkModule: Network = new Network() ,blipApiKey: string,BlipContacts: BlipContacts){
       dotenv.config();
       super();
       
       this.instanceId =`${uuidv4()}-${moment().format('YYYYMMDDHHmmss')}`
       this.categoryTrack = "sdkuse.ts-blip";
       this.classIdentifier = "ts-blip.BlipMessaging";
-      this.BlipContacts = new BlipContacts();
+      this.BlipContacts = BlipContacts
       this.networkModule = networkModule;
       this.blipApiKey = blipApiKey
 
@@ -339,8 +394,9 @@ export class BlipMessaging extends BlipAnalytics {
     }
 
     public async init(){
-      await this.sendUseRegister(this.blipApiKey);
+      
       this.isInscented = true
+      await this.sendUseRegister(this.blipApiKey);
     }
 
     private async sendUseRegister(blipApiKey: string) {
@@ -358,8 +414,9 @@ export class BlipMessaging extends BlipAnalytics {
       await this.createEvent(blipApiKey, trackobj);
     }
   
-    public async sendGrowthMessage(broadcast: broadcast,ignore_onboarding: boolean = false,retrieve_on_flow: boolean = true): Promise<any[]> {
+    public async sendGrowthMessage(broadcast: broadcast,config?:config): Promise<any[]> {
         try {  
+            const { ignore_onboarding, retrieve_on_flow } = config ? config : {ignore_onboarding: false,retrieve_on_flow: false};
             const { template_name, stateidentifier, blockid, clients, bot, components_mapping } = broadcast;
     
             const templates = await this.getTemplateMessages(this.blipApiKey);
