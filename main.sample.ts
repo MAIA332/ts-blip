@@ -62,8 +62,8 @@ const myBroad: broadcast = {
         ],
     }],
     template_name:"send_warnig_return_the_equipment",
-    bot:"testprincipal",
-    blockid:"79610af8-12d5-4942-8ff0-792c90ca08e3",
+    //bot:"testprincipal", apenas caso você defina retrieve_on_flow como true, o bot é o bot que vai receber a mensagem e o bloco que vai ser enviado para o cliente
+    //blockid:"79610af8-12d5-4942-8ff0-792c90ca08e3", apenas caso você defina retrieve_on_flow como true, o bot é o bot que vai receber a mensagem e o bloco que vai ser enviado para o cliente
     stateidentifier:"7404cf6c-45b6-4739-8c40-350bf880cefb"
 }
 
