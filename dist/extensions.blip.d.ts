@@ -1,0 +1,54 @@
+import { destinys } from "./Types/general.type";
+import BlipResponse from "./Interfaces/blip.response";
+import { Contact, userState } from "./Types/contacts.types";
+import { eventCounter, category, templateMessage, event } from "./Types/analytics.type";
+import { broadcast, config } from "./Types/messaging.type";
+import { Network } from "./utils/network";
+declare class BlipAnalytics {
+    protected blipApiUrl: string;
+    protected destinys: destinys[];
+    constructor();
+    createEvent(blipApiKey: string, event: event): Promise<BlipResponse>;
+    getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take?: number): Promise<eventCounter[]>;
+    getTrackingCategories(blipApiKey: string): Promise<category[]>;
+    getTemplateMessages(blipApiKey: string): Promise<templateMessage[]>;
+}
+export declare class BlipContacts extends BlipAnalytics {
+    protected destinys: destinys[];
+    private blipUrl;
+    private instanceId;
+    private categoryTrack;
+    private classIdentifier;
+    private networkModule;
+    private isInscented;
+    constructor(networkModule?: Network);
+    init(blipApiKey: string): Promise<void>;
+    private sendUseRegister;
+    get_contact(tunnel_originator: string, blip_api_key: string): Promise<Contact>;
+    get_all_contacts(blip_api_key: string, skip?: number, take?: number, filter?: string): Promise<Contact[]>;
+    get_context_variables(blip_api_key: string, contact_identintity: string, filter?: string): Promise<BlipResponse>;
+    create_context_variable(blip_api_key: string, contact_identity: string, variable: string, value: string, type_?: string): Promise<BlipResponse>;
+    set_master_state(blip_api_key: string, contact_identity: string, state: string): Promise<BlipResponse>;
+    set_user_state(blip_api_key: string, contact_identity: string, state: string, identifier: string): Promise<BlipResponse>;
+    get_user_state(blip_api_key: string, contact_identity: string, identifier: string): Promise<userState>;
+    create_or_update_contact(name: string, contact_identity: string, blip_api_key: string, extras: Record<string, string>): Promise<BlipResponse>;
+}
+export declare class BlipMessaging extends BlipAnalytics {
+    private BlipContacts;
+    private instanceId;
+    private categoryTrack;
+    private classIdentifier;
+    private networkModule;
+    private blipApiKey;
+    private isInscented;
+    constructor(networkModule: Network | undefined, blipApiKey: string, BlipContacts: BlipContacts);
+    init(): Promise<void>;
+    private sendUseRegister;
+    sendGrowthMessage(broadcast: broadcast, config?: config): Promise<any[]>;
+    private sendSingleMessage;
+    sendScheduledMessage(to: string, message: any, type: string, when: string, name?: string): Promise<any>;
+    private mountMessageTemplate;
+    private componentToBuilder;
+    private replacePlaceholders;
+}
+export {};

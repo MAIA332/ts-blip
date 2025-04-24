@@ -1,4 +1,4 @@
-export interface BlipResponse {
+export default interface BlipResponse {
     type?: string;
     resource?: any;
     method?: string,

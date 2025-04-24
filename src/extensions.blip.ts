@@ -1,5 +1,5 @@
 import { destinys } from "./Types/general.type";
-import { BlipResponse } from "./Interfaces/blip.response";
+import BlipResponse  from "./Interfaces/blip.response";
 import { Contact,userState } from "./Types/contacts.types";
 import dotenv from "dotenv";
 import axios from "axios";
