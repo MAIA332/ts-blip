@@ -92,12 +92,13 @@ class BlipAnalytics {
     }
 }
 class BlipContacts extends BlipAnalytics {
-    constructor(networkModule = new network_1.Network()) {
+    constructor(networkModule = new network_1.Network(), blipApiKey) {
         dotenv_1.default.config();
         super();
         this.destinys = [];
         this.blipUrl = process.env.BLIP_URL;
         this.isInscented = false;
+        this.accessGranted = false;
         this.destinys = [
             {
                 to: "postmaster@crm.msging.net"
@@ -110,29 +111,48 @@ class BlipContacts extends BlipAnalytics {
         this.categoryTrack = "sdkuse.ts-blip";
         this.classIdentifier = "ts-blip.BlipContacts";
         this.networkModule = networkModule;
+        this.blipApiKey = blipApiKey;
         return new Proxy(this, {
             get: (target, prop, receiver) => {
                 const original = Reflect.get(target, prop, receiver);
-                if (typeof original === "function" &&
-                    prop !== "init" &&
+                const shouldWrap = typeof original === "function" &&
                     prop !== "constructor" &&
-                    !prop.startsWith("_")) {
-                    return (...args) => {
-                        if (!target.isInscented) {
-                            console.warn(`[BlipContacts] Método '${prop}' bloqueado, inicialize a classe antes`);
-                            return;
-                        }
-                        return original.apply(target, args);
-                    };
-                }
-                return original;
-            }
+                    !prop.startsWith("_");
+                if (!shouldWrap)
+                    return original;
+                return (...args) => {
+                    // 🔒 Bloquear `init` se `isInitilized === false`
+                    if (prop === "init" && target.isInscented === false) {
+                        console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
+                        return;
+                    }
+                    // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
+                    const alwaysAllowed = ["init"];
+                    if (!target.isInscented && !alwaysAllowed.includes(prop)) {
+                        console.warn(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
+                        return;
+                    }
+                    // 🔐 Bloquear métodos sensíveis se `accessGranted === false`
+                    const accessRequiredMethods = ["get_contact", "get_all_contacts", "get_context_variables", "create_context_variable", "set_master_state", "set_user_state", "get_user_state", "create_or_update_contact"];
+                    if (!target.accessGranted && accessRequiredMethods.includes(prop)) {
+                        console.warn(`[BlipMessaging] access denied to '${prop}', key is not granted`);
+                        return;
+                    }
+                    return original.apply(target, args);
+                };
+            },
         });
     }
-    init(blipApiKey) {
+    init() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.sendUseRegister(blipApiKey);
             this.isInscented = true;
+            const initResponse = yield this.sendUseRegister(this.blipApiKey);
+            if (initResponse[0].status == "success") {
+                this.accessGranted = true;
+            }
+            else {
+                this.accessGranted = false;
+            }
         });
     }
     sendUseRegister(blipApiKey) {
@@ -147,10 +167,21 @@ class BlipContacts extends BlipAnalytics {
                     network: this.networkModule.summary()
                 })
             };
-            yield this.createEvent(blipApiKey, trackobj);
+            try {
+                const response = yield this.createEvent(blipApiKey, trackobj);
+                if (response.status == "success") {
+                    return [{ status: "success", message: "access granted" }];
+                }
+                else {
+                    return [{ status: "failure", message: "access denied" }];
+                }
+            }
+            catch (error) {
+                return [{ status: "failure", message: error.message }];
+            }
         });
     }
-    get_contact(tunnel_originator, blip_api_key) {
+    get_contact(tunnel_originator) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -163,15 +194,15 @@ class BlipContacts extends BlipAnalytics {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
                 data: data,
             });
             return response.data.resource;
         });
     }
-    get_all_contacts(blip_api_key_1) {
-        return __awaiter(this, arguments, void 0, function* (blip_api_key, skip = 0, take = 5000, filter) {
+    get_all_contacts() {
+        return __awaiter(this, arguments, void 0, function* (skip = 0, take = 5000, filter) {
             const filter_ = filter ? `&$filter=${filter}` : "";
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -184,14 +215,14 @@ class BlipContacts extends BlipAnalytics {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
                 data: data,
             });
             return response.data.resource;
         });
     }
-    get_context_variables(blip_api_key, contact_identintity, filter) {
+    get_context_variables(contact_identintity, filter) {
         return __awaiter(this, void 0, void 0, function* () {
             const filter_ = filter ? `/${filter}` : "";
             const data = {
@@ -205,15 +236,15 @@ class BlipContacts extends BlipAnalytics {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
                 data: data,
             });
             return response.data;
         });
     }
-    create_context_variable(blip_api_key_1, contact_identity_1, variable_1, value_1) {
-        return __awaiter(this, arguments, void 0, function* (blip_api_key, contact_identity, variable, value, type_ = "text/plain") {
+    create_context_variable(contact_identity_1, variable_1, value_1) {
+        return __awaiter(this, arguments, void 0, function* (contact_identity, variable, value, type_ = "text/plain") {
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[1].to,
@@ -225,13 +256,13 @@ class BlipContacts extends BlipAnalytics {
             const response = yield axios_1.default.post(`${this.blipUrl}/commands`, data, {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
             });
             return response.data;
         });
     }
-    set_master_state(blip_api_key, contact_identity, state) {
+    set_master_state(contact_identity, state) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -244,13 +275,13 @@ class BlipContacts extends BlipAnalytics {
             const response = yield axios_1.default.post(`${this.blipUrl}/commands`, data, {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
             });
             return response.data;
         });
     }
-    set_user_state(blip_api_key, contact_identity, state, identifier) {
+    set_user_state(contact_identity, state, identifier) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -263,13 +294,13 @@ class BlipContacts extends BlipAnalytics {
             const response = yield axios_1.default.post(`${this.blipUrl}/commands`, data, {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
             });
             return response.data;
         });
     }
-    get_user_state(blip_api_key, contact_identity, identifier) {
+    get_user_state(contact_identity, identifier) {
         return __awaiter(this, void 0, void 0, function* () {
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -280,7 +311,7 @@ class BlipContacts extends BlipAnalytics {
             const response = yield axios_1.default.post(`${this.blipUrl}/commands`, data, {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
             });
             const response_ = {
@@ -290,7 +321,7 @@ class BlipContacts extends BlipAnalytics {
             return response_;
         });
     }
-    create_or_update_contact(name, contact_identity, blip_api_key, extras) {
+    create_or_update_contact(name, contact_identity, extras) {
         return __awaiter(this, void 0, void 0, function* () {
             const phone = contact_identity.split("@")[0];
             const data = {
@@ -309,7 +340,7 @@ class BlipContacts extends BlipAnalytics {
             const response = yield axios_1.default.post(`${this.blipUrl}/commands`, data, {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: blip_api_key,
+                    Authorization: this.blipApiKey,
                 },
             });
             return response.data;
@@ -322,6 +353,7 @@ class BlipMessaging extends BlipAnalytics {
         dotenv_1.default.config();
         super();
         this.isInscented = false;
+        this.accessGranted = false;
         this.instanceId = `${(0, uuid_1.v4)()}-${(0, moment_timezone_1.default)().format('YYYYMMDDHHmmss')}`;
         this.categoryTrack = "sdkuse.ts-blip";
         this.classIdentifier = "ts-blip.BlipMessaging";
@@ -331,26 +363,44 @@ class BlipMessaging extends BlipAnalytics {
         return new Proxy(this, {
             get: (target, prop, receiver) => {
                 const original = Reflect.get(target, prop, receiver);
-                if (typeof original === "function" &&
-                    prop !== "init" &&
+                const shouldWrap = typeof original === "function" &&
                     prop !== "constructor" &&
-                    !prop.startsWith("_")) {
-                    return (...args) => {
-                        if (!target.isInscented) {
-                            console.warn(`[BlipMessaging] Método '${prop}' bloqueado, inicialize a classe antes`);
-                            return;
-                        }
-                        return original.apply(target, args);
-                    };
-                }
-                return original;
-            }
+                    !prop.startsWith("_");
+                if (!shouldWrap)
+                    return original;
+                return (...args) => {
+                    // 🔒 Bloquear `init` se `isInitilized === false`
+                    if (prop === "init" && target.isInscented === false) {
+                        console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
+                        return;
+                    }
+                    // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
+                    const alwaysAllowed = ["init"];
+                    if (!target.isInscented && !alwaysAllowed.includes(prop)) {
+                        console.warn(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
+                        return;
+                    }
+                    // 🔐 Bloquear métodos sensíveis se `accessGranted === false`
+                    const accessRequiredMethods = ["sendGrowthMessage", "sendScheduledMessage", "sendSingleMessage", "getTemplateMessages", "getTrackingCategories", "getEventCounters", "createEvent"];
+                    if (!target.accessGranted && accessRequiredMethods.includes(prop)) {
+                        console.warn(`[BlipMessaging] access denied to '${prop}', key is not granted`);
+                        return;
+                    }
+                    return original.apply(target, args);
+                };
+            },
         });
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             this.isInscented = true;
-            yield this.sendUseRegister(this.blipApiKey);
+            const initResponse = yield this.sendUseRegister(this.blipApiKey);
+            if (initResponse[0].status == "success") {
+                this.accessGranted = true;
+            }
+            else {
+                this.accessGranted = false;
+            }
         });
     }
     sendUseRegister(blipApiKey) {
@@ -365,7 +415,18 @@ class BlipMessaging extends BlipAnalytics {
                     network: this.networkModule.summary()
                 })
             };
-            yield this.createEvent(blipApiKey, trackobj);
+            try {
+                const response = yield this.createEvent(blipApiKey, trackobj);
+                if (response.status == "success") {
+                    return [{ status: "success", message: "access granted" }];
+                }
+                else {
+                    return [{ status: "failure", message: "access denied" }];
+                }
+            }
+            catch (error) {
+                return [{ status: "failure", message: error.message }];
+            }
         });
     }
     sendGrowthMessage(broadcast, config) {
@@ -383,7 +444,7 @@ class BlipMessaging extends BlipAnalytics {
                 if (!ignore_onboarding) {
                     const notOnboarded = yield Promise.all(clients.map((client) => __awaiter(this, void 0, void 0, function* () {
                         const contact_identity = `${client.number}@wa.gw.msging.net`;
-                        const user_state = yield this.BlipContacts.get_user_state(this.blipApiKey, contact_identity, stateidentifier);
+                        const user_state = yield this.BlipContacts.get_user_state(contact_identity, stateidentifier);
                         if (user_state.resource !== "onboarding" && user_state.status !== "failure") {
                             return client;
                         }
@@ -407,7 +468,7 @@ class BlipMessaging extends BlipAnalytics {
                             components: client.component,
                         },
                     };
-                    const contact = yield this.BlipContacts.get_contact(contact_identity, this.blipApiKey);
+                    const contact = yield this.BlipContacts.get_contact(contact_identity);
                     let hasActiveSession = false;
                     const now = (0, moment_timezone_1.default)().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss');
                     if (contact) {
@@ -424,10 +485,10 @@ class BlipMessaging extends BlipAnalytics {
                     }
                     //console.log("hasActiveSession",hasActiveSession);
                     //return[{ status: "mock", message: "Mocking active session", clients: [client] }];
-                    yield this.BlipContacts.create_or_update_contact(client.name, contact_identity, this.blipApiKey, client.extras);
+                    yield this.BlipContacts.create_or_update_contact(client.name, contact_identity, client.extras);
                     if (retrieve_on_flow) {
-                        yield this.BlipContacts.set_master_state(this.blipApiKey, contact_identity, botstate);
-                        yield this.BlipContacts.set_user_state(this.blipApiKey, contact_identity, blockid, stateidentifier);
+                        yield this.BlipContacts.set_master_state(contact_identity, botstate);
+                        yield this.BlipContacts.set_user_state(contact_identity, blockid, stateidentifier);
                     }
                     let sendResult = false;
                     if (hasActiveSession) {
