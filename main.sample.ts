@@ -1,8 +1,8 @@
-import { BlipContacts, BlipMessaging } from "./extensions.blip";
+import { BlipContacts, BlipMessaging } from "./src/extensions.blip";
 import dotenv from "dotenv";
-import { broadcast } from "./Types/messaging.type";
+import { broadcast } from "./src/Types/messaging.type";
 import { v4 as uuidv4 } from "uuid";
-import { Network } from "./utils/network";
+import { Network } from "./src/utils/network";
 
 dotenv.config();
 

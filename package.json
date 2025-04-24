@@ -1,5 +1,5 @@
 {
-  "name": "ts-blip",
+  "name": "@nmultifibra/ts-blip",
   "version": "1.0.0",
   "description": "SDK Blip para TS",
   "main": "index.js",
