@@ -8,11 +8,12 @@ dotenv.config();
 
 const routerKey = process.env.ROUTER_KEY! 
 const network = new Network();
+const blipUrl = process.env.BLIP_URL!;
 
-const blipContacts = new BlipContacts(network,routerKey);
+const blipContacts = new BlipContacts(network,routerKey,blipUrl);
 blipContacts.init();
 //======================================================
-const blip = new BlipMessaging(network,routerKey,blipContacts);
+const blip = new BlipMessaging(network,routerKey,blipContacts,blipUrl);
 blip.init();
 
 const myBroad: broadcast = {

@@ -7,7 +7,7 @@ import { Network } from "./utils/network";
 declare class BlipAnalytics {
     protected blipApiUrl: string;
     protected destinys: destinys[];
-    constructor();
+    constructor(blipApiUrl: string);
     createEvent(blipApiKey: string, event: event): Promise<BlipResponse>;
     getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take?: number): Promise<eventCounter[]>;
     getTrackingCategories(blipApiKey: string): Promise<category[]>;
@@ -23,7 +23,7 @@ export declare class BlipContacts extends BlipAnalytics {
     private isInscented;
     private blipApiKey;
     private accessGranted;
-    constructor(networkModule: Network | undefined, blipApiKey: string);
+    constructor(networkModule: Network | undefined, blipApiKey: string, blipUrl: string);
     init(): Promise<void>;
     private sendUseRegister;
     get_contact(tunnel_originator: string): Promise<Contact>;
@@ -44,7 +44,8 @@ export declare class BlipMessaging extends BlipAnalytics {
     private blipApiKey;
     private isInscented;
     private accessGranted;
-    constructor(networkModule: Network | undefined, blipApiKey: string, BlipContacts: BlipContacts);
+    protected blipApiUrl: string;
+    constructor(networkModule: Network | undefined, blipApiKey: string, BlipContacts: BlipContacts, blipApiUrl: string);
     init(): Promise<void>;
     private sendUseRegister;
     sendGrowthMessage(broadcast: broadcast, config?: config): Promise<any[]>;

@@ -19,10 +19,9 @@ const uuid_1 = require("uuid");
 const moment_timezone_1 = __importDefault(require("moment-timezone"));
 const network_1 = require("./utils/network");
 class BlipAnalytics {
-    constructor() {
-        this.blipApiUrl = process.env.BLIP_URL;
+    constructor(blipApiUrl) {
         this.destinys = [{ to: "postmaster@analytics.msging.net" }, { to: "postmaster@wa.gw.msging.net" }, { to: "postmaster@scheduler.msging.net" }];
-        dotenv_1.default.config();
+        this.blipApiUrl = blipApiUrl;
     }
     createEvent(blipApiKey, event) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -92,11 +91,10 @@ class BlipAnalytics {
     }
 }
 class BlipContacts extends BlipAnalytics {
-    constructor(networkModule = new network_1.Network(), blipApiKey) {
+    constructor(networkModule = new network_1.Network(), blipApiKey, blipUrl) {
         dotenv_1.default.config();
-        super();
+        super(blipUrl);
         this.destinys = [];
-        this.blipUrl = process.env.BLIP_URL;
         this.isInscented = false;
         this.accessGranted = false;
         this.destinys = [
@@ -112,6 +110,7 @@ class BlipContacts extends BlipAnalytics {
         this.classIdentifier = "ts-blip.BlipContacts";
         this.networkModule = networkModule;
         this.blipApiKey = blipApiKey;
+        this.blipUrl = blipUrl;
         return new Proxy(this, {
             get: (target, prop, receiver) => {
                 const original = Reflect.get(target, prop, receiver);
@@ -416,9 +415,9 @@ class BlipContacts extends BlipAnalytics {
 }
 exports.BlipContacts = BlipContacts;
 class BlipMessaging extends BlipAnalytics {
-    constructor(networkModule = new network_1.Network(), blipApiKey, BlipContacts) {
+    constructor(networkModule = new network_1.Network(), blipApiKey, BlipContacts, blipApiUrl) {
         dotenv_1.default.config();
-        super();
+        super(blipApiUrl);
         this.isInscented = false;
         this.accessGranted = false;
         this.instanceId = `${(0, uuid_1.v4)()}-${(0, moment_timezone_1.default)().format('YYYYMMDDHHmmss')}`;
@@ -427,6 +426,7 @@ class BlipMessaging extends BlipAnalytics {
         this.BlipContacts = BlipContacts;
         this.networkModule = networkModule;
         this.blipApiKey = blipApiKey;
+        this.blipApiUrl = blipApiUrl;
         return new Proxy(this, {
             get: (target, prop, receiver) => {
                 const original = Reflect.get(target, prop, receiver);

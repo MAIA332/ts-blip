@@ -11,11 +11,11 @@ import { Network } from "./utils/network";
 
 
 class BlipAnalytics {
-  protected blipApiUrl: string =  process.env.BLIP_URL!;
+  protected blipApiUrl: string;
   protected destinys: destinys[] = [{ to: "postmaster@analytics.msging.net" }, { to: "postmaster@wa.gw.msging.net" }, { to: "postmaster@scheduler.msging.net" }];
   
-  constructor() {
-    dotenv.config();
+  constructor(blipApiUrl:string) {
+    this.blipApiUrl = blipApiUrl;
   }
   
   async createEvent(blipApiKey: string, event: event): Promise<BlipResponse> {
@@ -100,7 +100,7 @@ class BlipAnalytics {
 }
 export class BlipContacts extends BlipAnalytics{
   protected destinys: destinys[] = [];
-  private blipUrl: string =  process.env.BLIP_URL!;
+  private blipUrl: string;
   private instanceId: string;
   private categoryTrack: string;
   private classIdentifier: string;
@@ -110,9 +110,9 @@ export class BlipContacts extends BlipAnalytics{
   private accessGranted: boolean = false;
 
 
-  constructor(networkModule: Network = new Network(),blipApiKey: string){
+  constructor(networkModule: Network = new Network(),blipApiKey: string,blipUrl: string){
       dotenv.config();
-      super();
+      super(blipUrl);
 
       this.destinys = [
           {
@@ -128,6 +128,7 @@ export class BlipContacts extends BlipAnalytics{
       this.classIdentifier = "ts-blip.BlipContacts";
       this.networkModule = networkModule
       this.blipApiKey = blipApiKey
+      this.blipUrl = blipUrl
 
       return new Proxy(this, {
         get: (target, prop: string, receiver) => {
@@ -475,10 +476,11 @@ export class BlipMessaging extends BlipAnalytics {
   private blipApiKey: string;
   private isInscented: boolean = false
   private accessGranted: boolean = false;
+  protected blipApiUrl: string;
   
-  constructor(networkModule: Network = new Network() ,blipApiKey: string,BlipContacts: BlipContacts){
+  constructor(networkModule: Network = new Network() ,blipApiKey: string,BlipContacts: BlipContacts,blipApiUrl: string){
     dotenv.config();
-    super();
+    super(blipApiUrl);
     
     this.instanceId =`${uuidv4()}-${moment().format('YYYYMMDDHHmmss')}`
     this.categoryTrack = "sdkuse.ts-blip";
@@ -486,6 +488,7 @@ export class BlipMessaging extends BlipAnalytics {
     this.BlipContacts = BlipContacts
     this.networkModule = networkModule;
     this.blipApiKey = blipApiKey
+    this.blipApiUrl = blipApiUrl
 
     return new Proxy(this, {
       get: (target, prop: string, receiver) => {
