@@ -9,7 +9,7 @@ export type broadcast = {
 export type client = {
     id: string;
     name: string;
-    credential: string;
+    credential?: string;
     number: string;
     extras: Record<string, string>;
     component: any;
