@@ -14,6 +14,13 @@ export type client = {
     extras: Record<string, string>;
     component: any;
 };
+export type Component = {
+    type: string;
+    text?: string;
+    example: {
+        [key: string]: string[][] | string[];
+    };
+};
 export type config = {
     ignore_onboarding?: boolean;
     retrieve_on_flow?: boolean;
