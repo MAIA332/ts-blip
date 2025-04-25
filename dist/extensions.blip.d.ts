@@ -53,5 +53,6 @@ export declare class BlipMessaging extends BlipAnalytics {
     private mountMessageTemplate;
     private componentToBuilder;
     private replacePlaceholders;
+    private mergeExtras;
 }
 export {};

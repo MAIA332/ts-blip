@@ -145,6 +145,12 @@ class BlipContacts extends BlipAnalytics {
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+           * Initializes the BlipMessaging class, sending a use register request to the
+           * server. If the response status is "success", sets `accessGranted` to true,
+           * otherwise sets it to false.
+           * @returns nothing
+           */
             this.isInscented = true;
             const initResponse = yield this.sendUseRegister(this.blipApiKey);
             if (initResponse[0].status == "success") {
@@ -157,6 +163,14 @@ class BlipContacts extends BlipAnalytics {
     }
     sendUseRegister(blipApiKey) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+           * Envia um evento de uso da classe para o servidor,
+           * solicitando acesso   API do BLiP.
+           * @param blipApiKey - Chave de acesso API do BLiP.
+           * @returns Uma promessa com o resultado da opera o. Caso a chave seja
+           * v lida, retorna um array com um objeto no formato { status: "success", message: "access granted" }.
+           * Caso contr rio, retorna um array com um objeto no formato { status: "failure", message: "access denied" }.
+           */
             const trackobj = {
                 category: this.categoryTrack,
                 action: JSON.stringify({
@@ -183,6 +197,11 @@ class BlipContacts extends BlipAnalytics {
     }
     get_contact(tunnel_originator) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+          * Returns a contact by its tunnel originator.
+          * @param tunnel_originator - the tunnel originator of the contact to be retrieved.
+          * @returns a promise with the contact object.
+          */
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[0].to,
@@ -203,6 +222,13 @@ class BlipContacts extends BlipAnalytics {
     }
     get_all_contacts() {
         return __awaiter(this, arguments, void 0, function* (skip = 0, take = 5000, filter) {
+            /**
+           * Returns a list of contacts.
+           * @param skip - the number of records to skip. Defaults to 0.
+           * @param take - the number of records to take. Defaults to 5000.
+           * @param filter - the filter to be applied to the contacts. Defaults to an empty string.
+           * @returns a promise with the list of contacts.
+           */
             const filter_ = filter ? `&$filter=${filter}` : "";
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -224,6 +250,12 @@ class BlipContacts extends BlipAnalytics {
     }
     get_context_variables(contact_identintity, filter) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+           * Retrieves context variables for a given contact identity.
+           * @param contact_identintity - The identity of the contact for which to retrieve context variables.
+           * @param filter - An optional filter to narrow down the context variables. Defaults to an empty string.
+           * @returns A promise that resolves to a BlipResponse containing the context variables.
+           */
             const filter_ = filter ? `/${filter}` : "";
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -245,6 +277,14 @@ class BlipContacts extends BlipAnalytics {
     }
     create_context_variable(contact_identity_1, variable_1, value_1) {
         return __awaiter(this, arguments, void 0, function* (contact_identity, variable, value, type_ = "text/plain") {
+            /**
+           * Creates a context variable for a given contact identity.
+           * @param contact_identity - The identity of the contact for which to create the context variable.
+           * @param variable - The name of the context variable to be created.
+           * @param value - The value of the context variable to be created.
+           * @param type_ - The type of the context variable to be created. Defaults to "text/plain".
+           * @returns A promise that resolves to a BlipResponse containing the created context variable.
+           */
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[1].to,
@@ -264,6 +304,12 @@ class BlipContacts extends BlipAnalytics {
     }
     set_master_state(contact_identity, state) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Sets the master state for a given contact identity.
+             * @param contact_identity - The identity of the contact for which to set the master state.
+             * @param state - The state value to be set.
+             * @returns A promise that resolves to a BlipResponse containing the result of the operation.
+             */
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[1].to,
@@ -283,6 +329,13 @@ class BlipContacts extends BlipAnalytics {
     }
     set_user_state(contact_identity, state, identifier) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Sets a user state for a given contact identity and identifier.
+             * @param contact_identity - The identity of the contact for which to set the user state.
+             * @param state - The state value to be set.
+             * @param identifier - The identifier of the user state to be set.
+             * @returns A promise that resolves to a BlipResponse containing the result of the operation.
+            */
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[1].to,
@@ -302,6 +355,12 @@ class BlipContacts extends BlipAnalytics {
     }
     get_user_state(contact_identity, identifier) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+           * Retrieves the user state for a given contact identity and identifier.
+           * @param contact_identity - The identity of the contact for which to retrieve the user state.
+           * @param identifier - The identifier of the user state to be retrieved.
+           * @returns A promise that resolves to a userState object containing the status and resource of the user state.
+           */
             const data = {
                 id: (0, uuid_1.v4)(),
                 to: this.destinys[1].to,
@@ -323,6 +382,14 @@ class BlipContacts extends BlipAnalytics {
     }
     create_or_update_contact(name, contact_identity, extras) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+           * Creates or updates a contact with the given name, contact identity, and extras.
+           *
+           * @param name - The name of the contact.
+           * @param contact_identity - The unique identity of the contact, typically in the format of an email or phone number.
+           * @param extras - Additional information to be stored with the contact as key-value pairs.
+           * @returns A promise that resolves to a BlipResponse containing the result of the operation.
+           */
             const phone = contact_identity.split("@")[0];
             const data = {
                 id: (0, uuid_1.v4)(),
@@ -393,6 +460,17 @@ class BlipMessaging extends BlipAnalytics {
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Initializes the class and enables the use of other methods.
+             *
+             * This method is responsible for sending a "use register" event to the Blip platform,
+             * which is a special type of event that is used to keep track of Blip SDK usage.
+             *
+             * If the event is sent successfully, the `accessGranted` property is set to `true`.
+             * Otherwise, it is set to `false`.
+             *
+             * @returns {Promise<void>}
+             */
             this.isInscented = true;
             const initResponse = yield this.sendUseRegister(this.blipApiKey);
             if (initResponse[0].status == "success") {
@@ -405,6 +483,15 @@ class BlipMessaging extends BlipAnalytics {
     }
     sendUseRegister(blipApiKey) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Realiza um registro de uso da classe BlipMessaging.
+             * Essa chamada   necess ria para que a classe possa acessar os
+             * recursos protegidos da API do BLiP.
+             * @param blipApiKey - Chave de acesso API do BLiP.
+             * @returns Uma promessa com o resultado da opera o. Caso a chave seja
+             * v lida, retorna um array com um objeto no formato { status: "success", message: "access granted" }.
+             * Caso contr rio, retorna um array com um objeto no formato { status: "failure", message: "access denied" }.
+             */
             const trackobj = {
                 category: this.categoryTrack,
                 action: JSON.stringify({
@@ -431,6 +518,39 @@ class BlipMessaging extends BlipAnalytics {
     }
     sendGrowthMessage(broadcast, config) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Envia uma mensagem personalizada para um contato, com base em uma template e parametros informados.
+             * @param broadcast - Objeto com as informações da mensagem a ser enviada.
+             * @param config - Configurações adicionais para o envio da mensagem.
+             * @returns Promise com o resultado da operação. Um array com os status de cada mensagem enviada.
+             * @example
+             * const broadcast = {
+             *  template_name: "template_name",
+             *  stateidentifier: "stateidentifier",
+             *  blockid: "blockid",
+             *  clients: [
+             *      {
+             *          number: "+551199999999",
+             *          name: "John Doe",
+             *          component: {
+             *              type: "text",
+             *              text: "Ol , como voc  est ?"
+             *          }
+             *      }
+             *  ],
+             *  bot: "bot@msging.net"
+             * }
+             *
+             * const config = {
+             *  ignore_onboarding: false,
+             *  retrieve_on_flow: false
+             * }
+             *
+             * const result = await blipMessaging.sendGrowthMessage(broadcast, config);
+             *
+             * console.log(result);
+             * // Output: [{ status: "success", number: "+551199999999", name: "John Doe" }]
+             */
             try {
                 const { ignore_onboarding, retrieve_on_flow } = config ? config : { ignore_onboarding: false, retrieve_on_flow: false };
                 const { template_name, stateidentifier, blockid, clients, bot, components_mapping } = broadcast;
@@ -483,10 +603,19 @@ class BlipMessaging extends BlipAnalytics {
                             hasActiveSession = true;
                         }
                     }
-                    //console.log("hasActiveSession",hasActiveSession);
-                    //return[{ status: "mock", message: "Mocking active session", clients: [client] }];
-                    yield this.BlipContacts.create_or_update_contact(client.name, contact_identity, client.extras);
+                    //Une os extras atuais do cliente com os novos extras se o contato já existir
+                    let concatenatedExtras = {};
+                    if (contact) {
+                        concatenatedExtras = this.mergeExtras(contact.extras, client.extras);
+                    }
+                    else {
+                        concatenatedExtras = Object.assign({}, client.extras);
+                    }
+                    yield this.BlipContacts.create_or_update_contact(client.name, contact_identity, concatenatedExtras);
                     if (retrieve_on_flow) {
+                        if (!blockid || !bot) {
+                            return [{ status: "failure", message: "Blockid and bot are required to retrieve client off the flow" }];
+                        }
                         yield this.BlipContacts.set_master_state(contact_identity, botstate);
                         yield this.BlipContacts.set_user_state(contact_identity, blockid, stateidentifier);
                     }
@@ -525,6 +654,20 @@ class BlipMessaging extends BlipAnalytics {
     }
     sendSingleMessage(to, message) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Sends a single message to a specified recipient using the BLiP API.
+             *
+             * This method constructs a message with the provided content and
+             * sends it to the specified recipient via the BLiP API. The message
+             * is sent as a JSON object with the type "template".
+             *
+             * @param to - The recipient's identity in the BLiP network.
+             * @param message - The content of the message to be sent. This is an
+             * object that will be merged with the default template type.
+             * @returns A promise that resolves to a boolean indicating the success
+             * of the operation. Returns true if the message was sent successfully,
+             * otherwise returns false.
+             */
             try {
                 yield axios_1.default.post(`${this.blipApiUrl}/messages`, {
                     id: (0, uuid_1.v4)(),
@@ -547,6 +690,24 @@ class BlipMessaging extends BlipAnalytics {
     }
     sendScheduledMessage(to, message, type, when, name) {
         return __awaiter(this, void 0, void 0, function* () {
+            /**
+             * Sends a scheduled message to a specified recipient using the BLiP API.
+             *
+             * This method constructs a message with the provided content and
+             * sends it to the specified recipient via the BLiP API, scheduling it
+             * to be sent at the specified time. The message is sent as a JSON object
+             * with the type "template".
+             *
+             * @param to - The recipient's identity in the BLiP network.
+             * @param message - The content of the message to be sent. This is an
+             * object that will be merged with the default template type.
+             * @param type - The type of the message to be sent. This can be "text" or "template".
+             * @param when - The date and time when the message should be sent, in ISO8601 format.
+             * @param name - Optional parameter. The name of the scheduled message in the BLiP Schedules API.
+             * If not provided, the name will be generated as "Scheduled message - ${when}".
+             * @returns A promise that resolves to the response from the BLiP API if the message was sent successfully,
+             * otherwise returns false.
+             */
             try {
                 let name_ = name;
                 if (!name_) {
@@ -583,6 +744,15 @@ class BlipMessaging extends BlipAnalytics {
         });
     }
     mountMessageTemplate(telefone, nome_template, variaveis_body, imagem_url) {
+        /**
+         * Monta uma mensagem de template para envio via BLiP.
+         *
+         * @param telefone - O número de telefone do destinatário.
+         * @param nome_template - O nome do template a ser utilizado.
+         * @param variaveis_body - As variáveis que serão substituídas no corpo da mensagem.
+         * @param imagem_url - URL da imagem a ser incluída no cabeçalho (opcional).
+         * @returns Um objeto representando a mensagem formatada para envio.
+         */
         const components = [];
         if (imagem_url) {
             components.push({
@@ -621,8 +791,13 @@ class BlipMessaging extends BlipAnalytics {
     }
     componentToBuilder(component, template) {
         return __awaiter(this, void 0, void 0, function* () {
-            /* console.log("component",component);
-            console.log(template); */
+            /**
+             * Converte um componente de mensagem para o formato esperado pelo BLiP.
+             *
+             * @param component - O componente a ser convertido.
+             * @param template - O template a ser utilizado.
+             * @returns Um objeto representando o componente formatado para envio.
+             */
             var _a, _b;
             const contact_source = "whatsapp";
             let mimeType = contact_source == "whatsapp" ? "application/json" : "application/vnd.lime.select+json";
@@ -667,12 +842,29 @@ class BlipMessaging extends BlipAnalytics {
         });
     }
     replacePlaceholders(templateText, data) {
+        /**
+         * Substitui os placeholders em um texto de template pelos valores fornecidos.
+         *
+         * @param templateText - O texto do template com placeholders.
+         * @param data - Os dados a serem inseridos nos placeholders.
+         * @returns O texto do template com os placeholders substituídos pelos valores correspondentes.
+         */
         let i = 0;
         return templateText.replace(/\{\{.*?\}\}/g, () => {
             var _a;
             const param = data[i++];
             return (_a = param === null || param === void 0 ? void 0 : param.text) !== null && _a !== void 0 ? _a : "";
         });
+    }
+    mergeExtras(existing, newData) {
+        /**
+         * Mescla dois objetos de extras, preservando os dados existentes e adicionando novos.
+         *
+         * @param existing - O objeto de extras existente.
+         * @param newData - O novo objeto de extras a ser mesclado.
+         * @returns O objeto resultante da mesclagem dos dois objetos de extras.
+         */
+        return Object.assign(Object.assign({}, existing), newData);
     }
 }
 exports.BlipMessaging = BlipMessaging;

@@ -1,8 +1,8 @@
 export type broadcast = {
     clients: client[];
     template_name: string;
-    bot: string;
-    blockid: string;
+    bot?: string;
+    blockid?: string;
     components_mapping?: string;
     stateidentifier: string;
 };

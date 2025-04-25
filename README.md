@@ -7,4 +7,4 @@ O `ts-blip` é um SDK desenvolvido em TypeScript para facilitar a integração c
 Para instalar as dependências do projeto, execute:
 
 ```bash
-npm install
+npm install @nmultifibra/ts-blip
