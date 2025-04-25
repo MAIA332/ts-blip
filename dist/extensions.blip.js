@@ -120,21 +120,16 @@ class BlipContacts extends BlipAnalytics {
                 if (!shouldWrap)
                     return original;
                 return (...args) => {
-                    // 🔒 Bloquear `init` se `isInitilized === false`
-                    if (prop === "init" && target.isInscented === false) {
-                        console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
-                        return;
-                    }
                     // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
                     const alwaysAllowed = ["init"];
                     if (!target.isInscented && !alwaysAllowed.includes(prop)) {
-                        console.warn(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
+                        console.warn(`[BlipContacts] method '${prop}' blocked. Initialize the class first.`);
                         return;
                     }
                     // 🔐 Bloquear métodos sensíveis se `accessGranted === false`
                     const accessRequiredMethods = ["get_contact", "get_all_contacts", "get_context_variables", "create_context_variable", "set_master_state", "set_user_state", "get_user_state", "create_or_update_contact"];
                     if (!target.accessGranted && accessRequiredMethods.includes(prop)) {
-                        console.warn(`[BlipMessaging] access denied to '${prop}', key is not granted`);
+                        console.warn(`[BlipContacts] access denied to '${prop}', key is not granted`);
                         return;
                     }
                     return original.apply(target, args);
@@ -420,6 +415,10 @@ class BlipMessaging extends BlipAnalytics {
         super(blipApiUrl);
         this.isInscented = false;
         this.accessGranted = false;
+        this.accessStatus = {
+            isInstancied: this.isInscented,
+            accessGranted: this.accessGranted,
+        };
         this.instanceId = `${(0, uuid_1.v4)()}-${(0, moment_timezone_1.default)().format('YYYYMMDDHHmmss')}`;
         this.categoryTrack = "sdkuse.ts-blip";
         this.classIdentifier = "ts-blip.BlipMessaging";
@@ -436,11 +435,6 @@ class BlipMessaging extends BlipAnalytics {
                 if (!shouldWrap)
                     return original;
                 return (...args) => {
-                    // 🔒 Bloquear `init` se `isInitilized === false`
-                    if (prop === "init" && target.isInscented === false) {
-                        console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
-                        return;
-                    }
                     // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
                     const alwaysAllowed = ["init"];
                     if (!target.isInscented && !alwaysAllowed.includes(prop)) {
@@ -479,6 +473,10 @@ class BlipMessaging extends BlipAnalytics {
             else {
                 this.accessGranted = false;
             }
+            this.accessStatus = {
+                isInstancied: this.isInscented,
+                accessGranted: this.accessGranted,
+            };
         });
     }
     sendUseRegister(blipApiKey) {
@@ -865,6 +863,14 @@ class BlipMessaging extends BlipAnalytics {
          * @returns O objeto resultante da mesclagem dos dois objetos de extras.
          */
         return Object.assign(Object.assign({}, existing), newData);
+    }
+    getAccessStatus() {
+        /**
+         * Retorna o status de acesso da classe BlipMessaging.
+         *
+         * @returns Um objeto contendo o status de acesso da classe.
+         */
+        return this.accessStatus;
     }
 }
 exports.BlipMessaging = BlipMessaging;

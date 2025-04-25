@@ -1,4 +1,4 @@
-import { destinys } from "./Types/general.type";
+import { destinys, statusObject } from "./Types/general.type";
 import BlipResponse from "./Interfaces/blip.response";
 import { Contact, userState } from "./Types/contacts.types";
 import { eventCounter, category, templateMessage, event } from "./Types/analytics.type";
@@ -45,6 +45,7 @@ export declare class BlipMessaging extends BlipAnalytics {
     private isInscented;
     private accessGranted;
     protected blipApiUrl: string;
+    accessStatus: statusObject;
     constructor(networkModule: Network | undefined, blipApiKey: string, BlipContacts: BlipContacts, blipApiUrl: string);
     init(): Promise<void>;
     private sendUseRegister;
@@ -55,5 +56,6 @@ export declare class BlipMessaging extends BlipAnalytics {
     private componentToBuilder;
     private replacePlaceholders;
     private mergeExtras;
+    getAccessStatus(): statusObject;
 }
 export {};

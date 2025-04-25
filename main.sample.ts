@@ -10,11 +10,6 @@ const routerKey = process.env.ROUTER_KEY!
 const network = new Network();
 const blipUrl = process.env.BLIP_URL!;
 
-const blipContacts = new BlipContacts(network,routerKey,blipUrl);
-blipContacts.init();
-//======================================================
-const blip = new BlipMessaging(network,routerKey,blipContacts,blipUrl);
-blip.init();
 
 const myBroad: broadcast = {
     clients: [{
@@ -68,7 +63,17 @@ const myBroad: broadcast = {
     stateidentifier:"7404cf6c-45b6-4739-8c40-350bf880cefb"
 }
 
-const messagingresult = async () => {
+async function makeBlipService() {
+    
+    const blipContacts = new BlipContacts(network,routerKey,blipUrl);
+    await blipContacts.init();
+    //======================================================
+    const blip = new BlipMessaging(network,routerKey,blipContacts,blipUrl);
+    await blip.init();
+    return blip;
+}
+
+/* const messagingresult = async () => {
     return await blip.sendGrowthMessage(myBroad); //{ignore_onboarding: false,retrieve_on_flow: false}
 };
 
@@ -77,4 +82,13 @@ messagingresult().then(result => {
     console.log("Resultado:", result);
 }).catch(err => {
     console.error("Erro ao buscar contato:", err);
-});
+}); */
+
+makeBlipService()
+  .then(async (result) => {  // Use async within the callback function
+    console.log("Resultado:", result.getAccessStatus());
+    console.log("Resultado:", await result.getTemplateMessages(routerKey));  // Await the async call
+  })
+  .catch(err => {
+    console.error("Erro ao buscar contato:", err);
+  });

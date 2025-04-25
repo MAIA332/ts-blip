@@ -1,4 +1,4 @@
-import { destinys } from "./Types/general.type";
+import { destinys, statusObject } from "./Types/general.type";
 import BlipResponse  from "./Interfaces/blip.response";
 import { Contact,userState } from "./Types/contacts.types";
 import dotenv from "dotenv";
@@ -142,23 +142,18 @@ export class BlipContacts extends BlipAnalytics{
           if (!shouldWrap) return original;
       
           return (...args: any[]) => {
-            // 🔒 Bloquear `init` se `isInitilized === false`
-            if (prop === "init" && target.isInscented === false) {
-              console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
-              return;
-            }
       
             // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
             const alwaysAllowed = ["init"];
             if (!target.isInscented && !alwaysAllowed.includes(prop)) {
-              console.warn(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
+              console.warn(`[BlipContacts] method '${prop}' blocked. Initialize the class first.`);
               return;
             }
       
             // 🔐 Bloquear métodos sensíveis se `accessGranted === false`
             const accessRequiredMethods = ["get_contact","get_all_contacts","get_context_variables","create_context_variable","set_master_state","set_user_state","get_user_state","create_or_update_contact"];
             if (!target.accessGranted && accessRequiredMethods.includes(prop)) {
-              console.warn(`[BlipMessaging] access denied to '${prop}', key is not granted`);
+              console.warn(`[BlipContacts] access denied to '${prop}', key is not granted`);
               return;
             }
       
@@ -477,7 +472,10 @@ export class BlipMessaging extends BlipAnalytics {
   private isInscented: boolean = false
   private accessGranted: boolean = false;
   protected blipApiUrl: string;
-  
+  public accessStatus: statusObject = {
+    isInstancied: this.isInscented,
+    accessGranted: this.accessGranted,
+  };
   constructor(networkModule: Network = new Network() ,blipApiKey: string,BlipContacts: BlipContacts,blipApiUrl: string){
     dotenv.config();
     super(blipApiUrl);
@@ -502,11 +500,6 @@ export class BlipMessaging extends BlipAnalytics {
         if (!shouldWrap) return original;
     
         return (...args: any[]) => {
-          // 🔒 Bloquear `init` se `isInitilized === false`
-          if (prop === "init" && target.isInscented === false) {
-            console.warn(`[BlipMessaging] method '${prop}' blocked, ininialize the class first`);
-            return;
-          }
     
           // 🔐 Métodos bloqueados se `isInscented === false` (menos os que liberamos)
           const alwaysAllowed = ["init"];
@@ -551,6 +544,11 @@ export class BlipMessaging extends BlipAnalytics {
     else{
       this.accessGranted = false
     }
+
+    this.accessStatus = {
+      isInstancied: this.isInscented,
+      accessGranted: this.accessGranted,
+    };
   }
 
   
@@ -1009,5 +1007,14 @@ export class BlipMessaging extends BlipAnalytics {
        * @returns O objeto resultante da mesclagem dos dois objetos de extras.
        */
       return { ...existing, ...newData };
+  }
+
+  public getAccessStatus(): statusObject {
+    /**
+     * Retorna o status de acesso da classe BlipMessaging.
+     * 
+     * @returns Um objeto contendo o status de acesso da classe.
+     */
+    return this.accessStatus;
   }
 }
