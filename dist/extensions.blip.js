@@ -25,13 +25,17 @@ class BlipAnalytics {
     }
     createEvent(blipApiKey, event) {
         return __awaiter(this, void 0, void 0, function* () {
+            const resource = {
+                category: event.category,
+                action: JSON.stringify(event.action),
+            };
             const response = yield axios_1.default.post(`${this.blipApiUrl}/commands`, {
                 id: (0, uuid_1.v4)(),
-                to: this.destinys[0].to,
+                to: "postmaster@analytics.msging.net",
                 method: "set",
                 uri: "/event-track",
                 type: "application/vnd.iris.eventTrack+json",
-                resource: event,
+                resource: resource,
             }, {
                 headers: {
                     "Content-Type": "application/json",
@@ -588,7 +592,7 @@ class BlipMessaging extends BlipAnalytics {
                     };
                     const contact = yield this.BlipContacts.get_contact(contact_identity);
                     let hasActiveSession = false;
-                    const now = (0, moment_timezone_1.default)().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss');
+                    const now = (0, moment_timezone_1.default)().tz('America/Sao_Paulo').add(5, 'seconds').format('YYYY-MM-DDTHH:mm:ss');
                     if (contact) {
                         //.log("has contact",contact);
                         const lastMessageDate = contact.lastMessageDate;
@@ -620,7 +624,6 @@ class BlipMessaging extends BlipAnalytics {
                     let sendResult = false;
                     if (hasActiveSession) {
                         const formated_message = yield this.componentToBuilder(message, selectedTemplate);
-                        //return [{ status: "mock", message: "Mocking active session", clients: [client] }];
                         sendResult = yield this.sendScheduledMessage(contact_identity, formated_message, "application/json", now, `Scheduled|[${client.name}]|SDK|${now}`);
                     }
                     else {
@@ -713,7 +716,7 @@ class BlipMessaging extends BlipAnalytics {
                 }
                 const res = yield axios_1.default.post(`${this.blipApiUrl}/commands`, {
                     id: (0, uuid_1.v4)(),
-                    to: this.destinys[2].to,
+                    to: "postmaster@scheduler.msging.net",
                     method: "set",
                     uri: "/schedules",
                     type: "application/vnd.iris.schedule+json",
@@ -723,10 +726,10 @@ class BlipMessaging extends BlipAnalytics {
                             to: to,
                             type: type,
                             content: Object.assign({}, message),
-                        }
-                    },
-                    when: when,
-                    name: name_,
+                        },
+                        when: when,
+                        name: name_,
+                    }
                 }, {
                     headers: {
                         "Content-Type": "application/json",

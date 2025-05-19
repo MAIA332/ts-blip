@@ -20,9 +20,9 @@ export declare class BlipContacts extends BlipAnalytics {
     private categoryTrack;
     private classIdentifier;
     private networkModule;
-    private isInscented;
+    isInscented: boolean;
     private blipApiKey;
-    private accessGranted;
+    accessGranted: boolean;
     constructor(networkModule: Network | undefined, blipApiKey: string, blipUrl: string);
     init(): Promise<void>;
     private sendUseRegister;

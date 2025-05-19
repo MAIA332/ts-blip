@@ -19,25 +19,32 @@ class BlipAnalytics {
   }
   
   async createEvent(blipApiKey: string, event: event): Promise<BlipResponse> {
-      const response = await axios.post(
-        `${this.blipApiUrl}/commands`,
-        {
-          id: uuidv4(),
-          to: this.destinys[0].to,
-          method: "set",
-          uri: "/event-track",
-          type: "application/vnd.iris.eventTrack+json",
-          resource: event,
+    
+    const resource = {
+      category: event.category,
+      action: JSON.stringify(event.action),
+    }
+    
+
+    const response = await axios.post(
+      `${this.blipApiUrl}/commands`,
+      {
+        id: uuidv4(),
+        to: "postmaster@analytics.msging.net",
+        method: "set",
+        uri: "/event-track",
+        type: "application/vnd.iris.eventTrack+json",
+        resource: resource,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: blipApiKey,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: blipApiKey,
-          },
-        }
-      );
-  
-      return response.data;
+      }
+    );
+
+    return response.data;
   }
   
   async getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take:number = 500): Promise<eventCounter[]> {
@@ -105,9 +112,9 @@ export class BlipContacts extends BlipAnalytics{
   private categoryTrack: string;
   private classIdentifier: string;
   private networkModule: Network;
-  private isInscented: boolean = false
+  public isInscented: boolean = false
   private blipApiKey: string;
-  private accessGranted: boolean = false;
+  public accessGranted: boolean = false;
 
 
   constructor(networkModule: Network = new Network(),blipApiKey: string,blipUrl: string){
@@ -174,6 +181,7 @@ export class BlipContacts extends BlipAnalytics{
    */
   
     this.isInscented = true
+    
     const initResponse = await this.sendUseRegister(this.blipApiKey);
     
     if(initResponse[0].status == "success"){
@@ -674,7 +682,7 @@ export class BlipMessaging extends BlipAnalytics {
       
               const contact = await this.BlipContacts.get_contact(contact_identity);
               let hasActiveSession = false;
-              const now = moment().tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss');
+              const now = moment().tz('America/Sao_Paulo').add(5, 'seconds').format('YYYY-MM-DDTHH:mm:ss');
 
               if(contact){
                   //.log("has contact",contact);
@@ -723,13 +731,12 @@ export class BlipMessaging extends BlipAnalytics {
                   
                   const formated_message = await this.componentToBuilder(message,selectedTemplate);
                   
-                  //return [{ status: "mock", message: "Mocking active session", clients: [client] }];
                   
                   sendResult = await this.sendScheduledMessage(contact_identity, formated_message,"application/json",now,`Scheduled|[${client.name}]|SDK|${now}`);
+                  
               }
-              else{
+              else{ 
                   sendResult = await this.sendSingleMessage(contact_identity, message);
-
               }
               successRates.push({
                   number: contact_identity,
@@ -830,22 +837,22 @@ export class BlipMessaging extends BlipAnalytics {
               `${this.blipApiUrl}/commands`,
               {
                   id: uuidv4(),
-                  to: this.destinys[2].to,
+                  to: "postmaster@scheduler.msging.net",
                   method: "set",
                   uri: "/schedules",
                   type: "application/vnd.iris.schedule+json",
                   resource: { 
-                      message:{ 
-                          id: uuidv4(),
-                          to: to,
-                          type: type,
-                          content: {
-                              ...message,
-                          },
-                      }
-                  },
-                  when: when,
-                  name: name_,
+                    message:{ 
+                        id: uuidv4(),
+                        to: to,
+                        type: type,
+                        content: {
+                            ...message,
+                        },
+                      },
+                      when: when,
+                      name: name_,
+                  }
               },
               {
                   headers: {
