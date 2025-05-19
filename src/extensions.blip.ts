@@ -632,7 +632,7 @@ export class BlipMessaging extends BlipAnalytics {
      * // Output: [{ status: "success", number: "+551199999999", name: "John Doe" }]
      */
       try {  
-          const { ignore_onboarding, retrieve_on_flow } = config ? config : {ignore_onboarding: false,retrieve_on_flow: false};
+          const { ignore_onboarding, retrieve_on_flow,force_active } = config ? config : {ignore_onboarding: false,retrieve_on_flow: false,force_active: false};
           const { template_name, stateidentifier, blockid, clients, bot, components_mapping } = broadcast;
   
           const templates = await this.getTemplateMessages(this.blipApiKey);
@@ -726,17 +726,20 @@ export class BlipMessaging extends BlipAnalytics {
               }
 
               let sendResult = false;
-              if (hasActiveSession) {
+              if (hasActiveSession && !force_active) {
                   
                   
                   const formated_message = await this.componentToBuilder(message,selectedTemplate);
                   
-                  
                   sendResult = await this.sendScheduledMessage(contact_identity, formated_message,"application/json",now,`Scheduled|[${client.name}]|SDK|${now}`);
+                  
+                  console.log("has sessiion",sendResult);
                   
               }
               else{ 
                   sendResult = await this.sendSingleMessage(contact_identity, message);
+                  
+                  console.log("has not sessiion",sendResult);
               }
               successRates.push({
                   number: contact_identity,
@@ -861,6 +864,9 @@ export class BlipMessaging extends BlipAnalytics {
                   },
               }
           );
+
+          console.log("res",res.data);
+          
 
           return res
       }

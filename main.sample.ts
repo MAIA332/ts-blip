@@ -22,7 +22,7 @@ const myBroad: broadcast = {
             "equipamentDescription":"Modem",
             "equipamentSN":"asdasd545s4das4d85"
         },
-        "number": "5511953844496",
+        "number": "5511930769312",
         "component": [{
             "type":"header",
             "parameters":[
@@ -87,7 +87,7 @@ messagingresult().then(result => {
 makeBlipService()
   .then(async (result) => {  // Use async within the callback function
     console.log("Resultado:", result.getAccessStatus());
-    console.log("Resultado:", await result.sendGrowthMessage(myBroad,{ignore_onboarding: true,retrieve_on_flow: false}));  // Await the async call
+    console.log("Resultado:", await result.sendGrowthMessage(myBroad,{ignore_onboarding: true,retrieve_on_flow: false,force_active: false}));  // Await the async call
   })
   .catch(err => {
     console.error("Erro ao buscar contato:", err);

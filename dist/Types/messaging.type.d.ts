@@ -24,4 +24,5 @@ export type Component = {
 export type config = {
     ignore_onboarding?: boolean;
     retrieve_on_flow?: boolean;
+    force_active?: boolean;
 };
