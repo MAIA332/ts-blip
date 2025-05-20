@@ -2,7 +2,7 @@ import { destinys, statusObject } from "./Types/general.type";
 import BlipResponse from "./Interfaces/blip.response";
 import { Contact, userState } from "./Types/contacts.types";
 import { eventCounter, category, templateMessage, event } from "./Types/analytics.type";
-import { broadcast, config } from "./Types/messaging.type";
+import { broadcast, config, schedulerStatus } from "./Types/messaging.type";
 import { Network } from "./utils/network";
 declare class BlipAnalytics {
     protected blipApiUrl: string;
@@ -12,6 +12,7 @@ declare class BlipAnalytics {
     getEventCounters(category: string, startDate: string, endDate: string, blipApiKey: string, take?: number): Promise<eventCounter[]>;
     getTrackingCategories(blipApiKey: string): Promise<category[]>;
     getTemplateMessages(blipApiKey: string): Promise<templateMessage[]>;
+    get_scheduled_message(blipApiKey: string, messageID: string): Promise<schedulerStatus>;
 }
 export declare class BlipContacts extends BlipAnalytics {
     protected destinys: destinys[];
@@ -52,7 +53,7 @@ export declare class BlipMessaging extends BlipAnalytics {
     sendGrowthMessage(broadcast: broadcast, config?: config): Promise<any[]>;
     private sendSingleMessage;
     private sendScheduledMessage;
-    private mountMessageTemplate;
+    mountMessageTemplate(customers: any[], components: any[], templateName: string, stateidentifier: string): broadcast;
     private componentToBuilder;
     private replacePlaceholders;
     private mergeExtras;

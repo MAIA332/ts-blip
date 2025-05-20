@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { eventCounter,category,templateMessage,event } from "./Types/analytics.type";
-import { broadcast,config } from "./Types/messaging.type";
+import { broadcast,config, schedulerStatus } from "./Types/messaging.type";
 import moment from 'moment-timezone';
 import { Network } from "./utils/network";
 
@@ -103,6 +103,26 @@ class BlipAnalytics {
       }
     );
     return response.data.resource.data;
+  }
+
+  async get_scheduled_message(blipApiKey: string, messageID: string):Promise<schedulerStatus> {
+    let response = await axios.post(
+      `${this.blipApiUrl}/commands`,
+      {
+        id: uuidv4(),
+        to: this.destinys[2].to,
+        method: "get",
+        uri: `/schedules/${messageID}`,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: blipApiKey,
+        },
+      }
+    );
+
+    return response.data
   }
 }
 export class BlipContacts extends BlipAnalytics{
@@ -545,12 +565,13 @@ export class BlipMessaging extends BlipAnalytics {
     
     this.isInscented = true
     const initResponse = await this.sendUseRegister(this.blipApiKey);
-    
+    //console.log("[BlipMessaging][init] sendUseRegister response:", initResponse);
     if(initResponse[0].status == "success"){
       this.accessGranted = true
     }
     else{
       this.accessGranted = false
+      console.error("[BlipMessaging][init] Access denied. Message:", initResponse[0].message);
     }
 
     this.accessStatus = {
@@ -585,7 +606,7 @@ export class BlipMessaging extends BlipAnalytics {
     try {
 
       const response = await this.createEvent(blipApiKey, trackobj);
-      
+      //console.log("[BlipMessaging][sendUseRegister] createEvent response:", response);
       if( response.status == "success"){
         return [{ status: "success", message: "access granted" }];
       }
@@ -594,7 +615,8 @@ export class BlipMessaging extends BlipAnalytics {
       }
       
     } catch (error:any) {
-        return [{ status: "failure", message: error.message }];
+      console.error("[BlipMessaging][sendUseRegister] Error:", error.message);
+      return [{ status: "failure", message: error.message }];
     }
   }
   public async sendGrowthMessage(broadcast: broadcast,config?:config): Promise<any[]> {
@@ -682,7 +704,7 @@ export class BlipMessaging extends BlipAnalytics {
       
               const contact = await this.BlipContacts.get_contact(contact_identity);
               let hasActiveSession = false;
-              const now = moment().tz('America/Sao_Paulo').add(5, 'seconds').format('YYYY-MM-DDTHH:mm:ss');
+                const now = moment().tz('America/Sao_Paulo').subtract(3, 'hours').format('YYYY-MM-DDTHH:mm:ss');
 
               if(contact){
                   //.log("has contact",contact);
@@ -726,25 +748,35 @@ export class BlipMessaging extends BlipAnalytics {
               }
 
               let sendResult = false;
+              let successFlag = false;
               if (hasActiveSession && !force_active) {
                   
                   
                   const formated_message = await this.componentToBuilder(message,selectedTemplate);
+
+                  //console.log("[BLiP][Agendamento] message:");
+                  
+                  //console.dir(formated_message,{depth: null});
+                  
                   
                   sendResult = await this.sendScheduledMessage(contact_identity, formated_message,"application/json",now,`Scheduled|[${client.name}]|SDK|${now}`);
-                  
-                  console.log("has sessiion",sendResult);
-                  
+                  if (sendResult) {
+                      successFlag = true;
+                  }
+
               }
               else{ 
+                  //console.log("[BLiP][Agendamento] message:");
+                  //console.dir(message,{depth: null});
                   sendResult = await this.sendSingleMessage(contact_identity, message);
-                  
-                  console.log("has not sessiion",sendResult);
+                  if (sendResult) {
+                      successFlag = true;
+                  }
               }
               successRates.push({
                   number: contact_identity,
                   name: client.name,
-                  status: sendResult ? "success" : "failure",
+                  status: successFlag ? "success" : "failure",
                   hasActiveSession: hasActiveSession
               });
           }
@@ -810,125 +842,129 @@ export class BlipMessaging extends BlipAnalytics {
     }
   }
 
-  private async sendScheduledMessage(to: string, message: any,type: string,when: string,name?: string): Promise<any> {
+  private async sendScheduledMessage(to: string, message: any, type: string, when: string, name?: string): Promise<any> {
     /**
      * Sends a scheduled message to a specified recipient using the BLiP API.
-     * 
-     * This method constructs a message with the provided content and 
-     * sends it to the specified recipient via the BLiP API, scheduling it 
-     * to be sent at the specified time. The message is sent as a JSON object 
-     * with the type "template".
-     * 
-     * @param to - The recipient's identity in the BLiP network.
-     * @param message - The content of the message to be sent. This is an 
-     * object that will be merged with the default template type.
-     * @param type - The type of the message to be sent. This can be "text" or "template".
-     * @param when - The date and time when the message should be sent, in ISO8601 format.
-     * @param name - Optional parameter. The name of the scheduled message in the BLiP Schedules API.
-     * If not provided, the name will be generated as "Scheduled message - ${when}".
-     * @returns A promise that resolves to the response from the BLiP API if the message was sent successfully, 
-     * otherwise returns false.
+     * Corrigido para garantir que o objeto message esteja no formato correto para o BLiP.
      */
-      try{
+    try {
+      let name_ = name;
+      if (!name_) {
+        name_ = `Scheduled message - ${when}`;
+      }
 
-          let name_ = name
-          if(!name_){
-              name_ = `Scheduled message - ${when}`
+      const messageID = uuidv4();
+      //console.log("[BLiP][Agendamento] messageID:", messageID);
+      // Garante o formato correto do campo 'when'
+      const whenUtc = moment(when).format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+
+      // Corrige o formato do objeto message para o BLiP Scheduler
+      let blipMessage;
+      if (message.type === "text/plain") {
+        blipMessage = {
+          id: messageID,
+          to: to,
+          type: "text/plain",
+          content: message.content
+        };
+      } else {
+        blipMessage = {
+          id: messageID,
+          to: to,
+          type: "application/json",
+          content: { ...message }
+        };
+      }
+      //console.log("[BLiP][Agendamento] Payload final enviado ao Scheduler:");
+      //console.dir(blipMessage, { depth: null });
+
+      const res = await axios.post(
+        `${this.blipApiUrl}/commands`,
+        {
+          id: uuidv4(),
+          to: "postmaster@scheduler.msging.net",
+          method: "set",
+          uri: "/schedules",
+          type: "application/vnd.iris.schedule+json",
+          resource: {
+            message: blipMessage,
+            when: whenUtc,
+            name: name_,
           }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: this.blipApiKey,
+          },
+        }
+      );
 
-          const res = await axios.post(
-              `${this.blipApiUrl}/commands`,
-              {
-                  id: uuidv4(),
-                  to: "postmaster@scheduler.msging.net",
-                  method: "set",
-                  uri: "/schedules",
-                  type: "application/vnd.iris.schedule+json",
-                  resource: { 
-                    message:{ 
-                        id: uuidv4(),
-                        to: to,
-                        type: type,
-                        content: {
-                            ...message,
-                        },
-                      },
-                      when: when,
-                      name: name_,
-                  }
-              },
-              {
-                  headers: {
-                      "Content-Type": "application/json",
-                      Authorization: this.blipApiKey,
-                  },
-              }
-          );
-
-          console.log("res",res.data);
-          
-
-          return res
+      // Check if message was scheduled successfully
+      let schedulerStatus = await this.get_scheduled_message(this.blipApiKey, messageID);
+      
+      //console.log("[BLiP][Agendamento] response:", res.data);
+      //console.log("[BLiP][Agendamento] schedulerStatus:", schedulerStatus);
+      
+      if (schedulerStatus.resource.status != "executed") {
+        return false;
       }
-      catch (error) {
-          console.error("Erro ao enviar mensagem:", error);
-          return false;
-      }
+
+      return res;
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      return false;
+    }
   }
 
-  private mountMessageTemplate(
-    telefone: string,
-    nome_template: string,
-    variaveis_body: string[],
-    imagem_url?: string
-  ): any {
+  public mountMessageTemplate(
+    customers: any[],
+    components: any[],
+    templateName: string,
+    stateidentifier: string,
+  ): broadcast {
     /**
-     * Monta uma mensagem de template para envio via BLiP.
-     * 
-     * @param telefone - O número de telefone do destinatário.
-     * @param nome_template - O nome do template a ser utilizado.
-     * @param variaveis_body - As variáveis que serão substituídas no corpo da mensagem.
-     * @param imagem_url - URL da imagem a ser incluída no cabeçalho (opcional).
-     * @returns Um objeto representando a mensagem formatada para envio.
+     * Monta um objeto broadcast a partir de uma lista de clientes, componentes e nome do template.
+     * @param customers - Array de clientes, cada um com contacts, id, name, credential, phone, component_map, etc.
+     * @param components - Array de componentes do template (ex: body, header, etc).
+     * @param templateName - Nome do template a ser utilizado.
+     * @returns Objeto broadcast pronto para envio.
      */
-    const components: any[] = [];
+    const contacts: any[] = customers.map((customer) => customer.contacts).flat();
 
-    if (imagem_url) {
-      components.push({
-        type: "header",
-        parameters: [
-          {
-            type: "image",
-            image: {
-              link: imagem_url,
-            },
-          },
-        ],
-      });
-    }
-
-    const body_parameters = variaveis_body.map((text) => ({ type: "text", text }));
-    components.push({
-      type: "body",
-      parameters: body_parameters,
-    });
-
-    return {
-      id: uuidv4(),
-      to: `${telefone}@wa.gw.msging.net`,
-      type: "application/json",
-      content: {
-        type: "template",
-        template: {
-          name: nome_template,
-          language: {
-            code: "pt_BR",
-            policy: "deterministic",
-          },
-          components,
-        },
-      },
+    const broadcast: broadcast = {
+      clients: contacts.map((customer) => {
+        return {
+          id: customer.id,
+          name: customer.name,
+          credential: customer.credential,
+          extras: {},
+          number: customer.phone,
+          component: components.map((component) => {
+            return {
+              type: component.type,
+              parameters: component.example.body_text!.flatMap((parameterBlock: string[]) =>
+                parameterBlock.map((parameter: string) => {
+                  let type = "text";
+                  if (/^\d+$/.test(parameter)) {
+                    type = "number";
+                  }
+                  // Busca o valor correto do parâmetro no customer usando o mapeamento
+                  const mappedKey = customer.component_map[parameterBlock.indexOf(parameter)];
+                  return {
+                    type: type,
+                    text: customer[mappedKey]
+                  };
+                })
+              )
+            };
+          })
+        };
+      }),
+      template_name: templateName,
+      stateidentifier: stateidentifier
     };
+    return broadcast;
   }
 
   private async componentToBuilder(component: any,template:any): Promise<any> {
@@ -957,43 +993,44 @@ export class BlipMessaging extends BlipAnalytics {
       let footerText = template.components.find((component: any) => component.type === "FOOTER")?.text || "";
       
       let hasButtons = template.components.find((component: any) => component.type === "BUTTONS");
-      let opt = []
-
+      
+      // Corrige o formato do objeto interativo para o padrão do WhatsApp Cloud API
+      let buttons = [];
       if (hasButtons) {
-          opt = hasButtons.buttons.map((button: any) => {
-              return {
-                  type: "reply",
-                  reply: {
-                      id: `ID 1.${hasButtons.buttons.indexOf(button) + 1}`,
-                      title: button.text
-                  }
+          buttons = hasButtons.buttons.map((button: any, idx: number) => ({
+              type: "reply",
+              reply: {
+                  id: `ID 1.${idx + 1}`,
+                  title: button.text
               }
-          });
+          }));
       }
 
-      let listTemplate: any = {
-          recipient_type: "individual",
-          type: "interactive",
-          interactive: {
-              type: "button",
-              body: {
-                  text: formated_text
-              },
-              footer: {
-                  text: footerText
-              }
-          }
-      };
-      
-      if (opt.length > 0) {
-          listTemplate.interactive.action = {
-              buttons: opt
-          };
+      // Se não houver botões, retorna mensagem de texto simples no formato aceito pelo Scheduler
+      if (!hasButtons || buttons.length === 0) {
+        const simpleText = {
+          type: "text/plain",
+          content: formated_text
+        };
+        //console.log("[BLiP][componentToBuilder] Payload texto simples para Scheduler:");
+        //console.dir(simpleText, { depth: null });
+        return simpleText;
       }
-      
-      
-      return listTemplate
-  
+
+      // Mensagem interativa (com botões e possivelmente footer)
+      const interactiveMsg = {
+        recipient_type: "individual",
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: formated_text },
+          ...(footerText ? { footer: { text: footerText } } : {}),
+          action: { buttons }
+        }
+      };
+      //console.log("[BLiP][componentToBuilder] Payload interativo para Scheduler:");
+      //console.dir(interactiveMsg, { depth: null });
+      return interactiveMsg;
   }
 
   private replacePlaceholders(templateText: string, data: any[]): string {

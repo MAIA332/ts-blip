@@ -26,3 +26,28 @@ export type config = {
     retrieve_on_flow?: boolean;
     force_active?: boolean;
 };
+export type schedulerStatus = {
+    type: "application/vnd.iris.schedule+json";
+    resource: {
+        name: string;
+        when: string;
+        message: {
+            type: string;
+            content: any;
+            id: string;
+            to: string;
+        };
+        status: string;
+    };
+    method: string;
+    status: string;
+    id: string;
+    from: string;
+    to: string;
+    metadata: {
+        traceparent: string;
+        "#command.uri": string;
+        "#metrics.custom.label": string;
+        [key: string]: any;
+    };
+};

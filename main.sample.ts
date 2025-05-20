@@ -16,48 +16,20 @@ const myBroad: broadcast = {
         "id": uuidv4(),
         "name": "Lucas",
         "credential":"480.119.258-06",
-        "extras":{
-            "clientName":"Lucas",
-            "untilDate":"25/06/2025",
-            "equipamentDescription":"Modem",
-            "equipamentSN":"asdasd545s4das4d85"
-        },
-        "number": "5511930769312",
-        "component": [{
-            "type":"header",
-            "parameters":[
-                    {
-                        "type":"image",
-                        "image":{
-                            "link":"https://blipmediastore.blip.ai/public-medias/Media_859d5d63-bf8e-4210-81e8-2afa96d38742"
-                        }
-                    }
-                ]
-            },
+        "extras":{},
+        "number": "551151977528",
+        "component": [
             {
             "type":"body",
                 "parameters":[
-                        {
-                            "type": "text",
-                            "text": "Lucas"
-                        },
-                        {
-                            "type": "text",
-                            "text": "25/06/2025"
-                        },
-                        {
-                            "type": "text",
-                            "text": "Modem"
-                        },
-                        {
-                            "type": "text",
-                            "text": "asdasd545s4das4d85"
-                        }
+                    { type: 'text', text: 'Lucas' },
+                    { type: 'text', text: 'Banda Larga' },
+                    { type: 'text', text: '(11) 4210-0123' }
                 ]
             }
         ],
     }],
-    template_name:"send_warnig_return_the_equipment",
+    template_name:"alertas_atualizacoes_conta",
     //bot:"testprincipal", apenas caso você defina retrieve_on_flow como true, o bot é o bot que vai receber a mensagem e o bloco que vai ser enviado para o cliente
     //blockid:"79610af8-12d5-4942-8ff0-792c90ca08e3", apenas caso você defina retrieve_on_flow como true, o bot é o bot que vai receber a mensagem e o bloco que vai ser enviado para o cliente
     stateidentifier:"7404cf6c-45b6-4739-8c40-350bf880cefb"
