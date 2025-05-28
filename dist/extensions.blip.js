@@ -459,13 +459,13 @@ class BlipMessaging extends BlipAnalytics {
                     const alwaysAllowed = ["init"];
                     if (!target.isInscented && !alwaysAllowed.includes(prop)) {
                         console.warn(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
-                        return;
+                        throw new Error(`[BlipMessaging] method '${prop}' blocked. Initialize the class first.`);
                     }
                     // 🔐 Bloquear métodos sensíveis se `accessGranted === false`
                     const accessRequiredMethods = ["sendGrowthMessage", "sendScheduledMessage", "sendSingleMessage", "getTemplateMessages", "getTrackingCategories", "getEventCounters", "createEvent"];
                     if (!target.accessGranted && accessRequiredMethods.includes(prop)) {
                         console.warn(`[BlipMessaging] access denied to '${prop}', key is not granted`);
-                        return;
+                        throw new Error(`[BlipMessaging] access denied to '${prop}', key is not granted`);
                     }
                     return original.apply(target, args);
                 };
@@ -493,7 +493,7 @@ class BlipMessaging extends BlipAnalytics {
             }
             else {
                 this.accessGranted = false;
-                console.error("[BlipMessaging][init] Access denied. Message:", initResponse[0].message);
+                return { "status": "failure", "message": "access denied" };
             }
             this.accessStatus = {
                 isInstancied: this.isInscented,

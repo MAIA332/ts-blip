@@ -48,7 +48,10 @@ export declare class BlipMessaging extends BlipAnalytics {
     protected blipApiUrl: string;
     accessStatus: statusObject;
     constructor(networkModule: Network | undefined, blipApiKey: string, BlipContacts: BlipContacts, blipApiUrl: string);
-    init(): Promise<void>;
+    init(): Promise<{
+        status: string;
+        message: string;
+    } | undefined>;
     private sendUseRegister;
     sendGrowthMessage(broadcast: broadcast, config?: config): Promise<any[]>;
     private sendSingleMessage;
